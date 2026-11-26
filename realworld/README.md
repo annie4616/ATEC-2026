@@ -1,39 +1,49 @@
-# realworld — 실기예선 통합 스택
+# realworld — Real-world preliminary stack
 
-홍콩 실물 대회(A2 Pro + PiPER)용. **세 작업 영역 중 유일하게 문서화된 코드베이스.**
+For the Hong Kong real-world round (A2 Pro + PiPER). This is the only one of our three
+working areas that is a coherent, documented codebase.
 
-의도적으로 **두 스택을 한 저장소에** 담았다:
+It deliberately holds **two stacks in one tree**:
 
-| 스택 | 역할 | 의존성 |
+| Stack | Role | Dependencies |
 |---|---|---|
-| 시뮬레이터 | 알고리즘이 맞다는 걸 증명 | IsaacLab + GPU |
-| **온보드** (`gmis_stack/onboard/`) | 로봇에서 **실제로 도는** 코드 | Isaac·CUDA **전부 미사용** |
+| Simulator | Proves the algorithms are correct | IsaacLab + GPU |
+| **Onboard** (`gmis_stack/onboard/`) | What **actually runs on the robot** | No Isaac, no CUDA |
 
-온보드 타깃은 Beelink 미니PC (Intel N150, 4 E-core, 12GB, **GPU 없음**).
+The onboard target is a Beelink mini-PC: Intel N150, 4 E-cores, 12 GB, **no GPU**.
 
-## 성적
+## Results
 
-Task 1 **80/80**, Task 2 **120/160** (정직한 항법·물체 인식 기준)
+Task 1 **80/80**, Task 2 **120/160** (under honest navigation and object detection).
 
-## 주요 진입점
+## Entry points
 
-- `gmis_stack/onboard/run.py` — 미션 진입점
-  - `--backend mock` : 데스크톱 리허설
-  - `--backend real --nic enp2s0` : 실제 로봇
-  - 백엔드 선택만이 유일한 차이. 로봇은 공용 장비라 체크인 전엔 못 만지기 때문
-- `gmis_stack/onboard/tools/offsim_gate.py` — 수락 게이트 (시뮬레이터·GPU·절대경로 금지 확인)
-- `gmis_stack/deploy/run_mission.sh` — 정책 교체 가능한 전체 미션
+- `gmis_stack/onboard/run.py` — the mission entry point
+  - `--backend mock` — desktop rehearsal
+  - `--backend real --nic enp2s0` — the actual robot
+  - The backend flag is the *only* difference between the two. The robot is shared
+    equipment we could not touch until check-in day, so everything above the hardware
+    boundary is byte-identical in both paths.
+- `gmis_stack/onboard/tools/offsim_gate.py` — acceptance gate: no simulator, no GPU,
+  no absolute paths
+- `gmis_stack/deploy/run_mission.sh` — full venue mission with swappable policies
 
-## ⚠️ run_mission.sh 의 `{ }`
+## Do not remove the braces in run_mission.sh
 
-스크립트 전체가 중괄호로 감싸여 있다. **지우지 말 것.**
-bash는 파일을 바이트 오프셋으로 게으르게 읽어서, 실행 중 파일을 수정하면
-오프셋이 밀려 **미션이 두 번 실행된 사고**가 있었다 (`0903_2222_svO`).
+The entire script body is wrapped in a single `{ }` group. This is deliberate.
 
-## 미니PC 병목
+Bash reads a script lazily by byte offset. Editing the file while it was running
+shifted that offset, and the wrapper resumed mid-stream and **launched a second
+unplanned mission** (incident `0903_2222_svO`). The braces force bash to parse the
+whole file before executing any of it.
 
-`gmis_stack/GRASP_PERCEPTION_SPEEDUP_PLAN.md` 참조.
-파지 정책은 무죄(42→7 MLP, 마이크로초). **인지가 범인.**
-핫스팟: `perception.py:1130 _blobs` (순수 파이썬 union-find, GIL 점유),
-`perception.py:208 label_map` (23만 픽셀 × 프로토타입).
-→ detect_hz 1.2 → 5Hz
+## Mini-PC bottleneck
+
+See `gmis_stack/GRASP_PERCEPTION_SPEEDUP_PLAN.md`.
+
+The grasp policy is innocent — a 42→7 MLP running in microseconds. **Perception is the
+culprit.** Hotspots: `perception.py:1130 _blobs` (connected components in pure Python
+with union-find, holding the GIL) and `perception.py:208 label_map` (230k pixels ×
+prototypes, full-frame float).
+
+Detection rate went from 1.2 Hz to 5 Hz.
