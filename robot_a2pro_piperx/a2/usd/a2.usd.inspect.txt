@@ -1,0 +1,6 @@
+USD: a2/usd/a2.usd
+default prim: a2
+rigid bodies (20): ['base_link', 'FL_hip', 'FL_thigh', 'FL_calf', 'FL_foot', 'FR_hip', 'FR_thigh', 'FR_calf', 'FR_foot', 'RL_hip', 'RL_thigh', 'RL_calf', 'RL_foot', 'RR_hip', 'RR_thigh', 'RR_calf', 'RR_foot', 'camera_link', 'front_lidar_link', 'rear_lidar_link']
+revolute joints (12): ['FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint', 'FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint', 'RL_hip_joint', 'RL_thigh_joint', 'RL_calf_joint', 'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint']
+prismatic joints (0): []
+fixed joints (7): ['FL_foot_joint', 'FR_foot_joint', 'RL_foot_joint', 'RR_foot_joint', 'camera_joint', 'front_lidar_joint', 'rear_lidar_joint']

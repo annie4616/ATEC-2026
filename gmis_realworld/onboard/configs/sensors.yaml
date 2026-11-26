@@ -1,0 +1,98 @@
+# Sensor contract.  ONE forward camera plus IMU/encoders is the entire perception input --
+# overview/follow cameras are recording-only and never reach the detector, and nothing on
+# the arm is assumed.  So the deploy risk here is never "a sensor we forgot to wire", it is
+# "a sensor that turns out to give less than the sim's".
+
+camera:
+  backend: a2_sdk              # a2_sdk | v4l2 | replay | mock
+  device: null                 # v4l2 node, or SDK channel name
+
+  # THE VIRTUAL PINHOLE.  Every tuned constant in perception.py -- colour prototypes, span
+  # thresholds, lateral gates, the ray-ground unprojection -- was fitted at this exact
+  # intrinsic and this exact field of view (course_mission/launch.py:28-56, focal_length
+  # 16.0 against IsaacLab's default 20.955 mm aperture).  Rather than re-tune the detector
+  # for whatever the real lens is, camadapter.py rectifies the real image INTO this frame.
+  # Unitree forward cameras are typically wide-angle, so expect an undistort-and-crop.
+  virtual_pinhole:
+    width: 640
+    height: 360
+    # 640 * focal_length 16.0 / horizontal_aperture 20.955 = 488.66619.  Confirmed against
+    # the intrinsic matrix in the recorded course frames, which reads 488.666199 -- these
+    # are the same number, and the first version of this file said 488.71 because the
+    # division was done in someone's head.  0.04 px is harmless; a constant that nobody
+    # checked against the data is not, which is why tools/check_docs.py now re-derives it.
+    fx: 488.6662
+    fy: 488.6662
+    cx: 320.0
+    cy: 180.0
+  # Derived, for sanity checks only: HFOV 66.4 deg, VFOV 40.4 deg.
+
+  # Real lens, filled in by tools/calib_extrinsics.py.  While `model` is null the adapter
+  # assumes the source is already a pinhole at native resolution and only rescales.
+  source:
+    model: null                # null | pinhole | fisheye
+    width: null
+    height: null
+    K: null                    # [fx, fy, cx, cy]
+    dist: null                 # [k1, k2, p1, p2, k3] (pinhole) or [k1..k4] (fisheye)
+
+  # base_link -> camera, from the A2 catalogue mount, pitched 22 deg down so the 0.5-3 m
+  # ground band fills the frame.  MEASURE THIS on check-in day: 2 deg of pitch error is
+  # 0.31 m of range error at 2 m, which is larger than the whole grasp tolerance.
+  extrinsics:
+    xyz: [0.3381, 0.0336, 0.0525]
+    pitch_deg: 22.0            # positive = nose down
+    yaw_deg: 0.0
+    roll_deg: 0.0
+
+  depth:
+    # Whether the built-in camera returns depth at all is REAL-HARDWARE CONFIRMATION #1.
+    #   available  -> use it (must be z-depth, i.e. distance to image plane, not radial)
+    #   lidar      -> perceive/depthsynth.py projects the LiDAR cloud into the pinhole
+    #   ground     -> ray/ground-plane intersection only (objects assumed to sit on ground)
+    source: ground             # available | lidar | ground
+    units_per_m: 1.0           # 1000.0 if the SDK hands back uint16 millimetres
+    max_range_m: 10.0
+    # Hole-fill radius when depth comes from the LiDAR.  See depthsynth for the measured
+    # sweep; 5 is where the curve flattens.
+    lidar_dilate: 5
+
+  # Frames carry the LowState tick they were captured against so the pose used for
+  # unprojection is the pose at exposure, not the pose at processing.
+  timestamp_source: lowstate_tick
+  latency_compensation: true
+
+lidar:
+  # URDF has front_lidar_link and rear_lidar_link and the sim configures NEITHER as a
+  # sensor -- the only LiDAR code in the tree is walk_course.py's GUIDE_NAV raycast path.
+  # If the SDK exposes the real one it answers confirmation #1 and strengthens navigation;
+  # if it does not, T1 runs on camera belt detection alone, which is the validated path.
+  backend: none                # none | a2_sdk | replay
+  extrinsics:
+    xyz: [0.33767, 0.0, 0.08134]
+    rpy: [1.5708, 0.0, 1.5708]
+  rail:
+    # Height band above the locally-estimated ground in which the 40 cm red guide strip
+    # lives, plus the forward window.  Ported from walk_course._detect_rail.
+    z_lo: 0.20
+    z_hi: 0.55
+    forward_m: 3.0
+    # A real belt is a thin LINE.  Stair risers caught by the height band form a broad blob
+    # and are rejected on fit residual -- without this the detector locks onto steps.
+    max_residual_m: 0.20
+    min_points: 4
+    ground_quantile: 0.10
+
+perception:
+  # Measured on a desktop core over 30 recorded frames: detect_arrays 64 ms (p90 104),
+  # detect_belt/detect_bins 4.1/4.0 ms with noise injection OFF.  The N150's E-cores are
+  # 4-6x slower, so belt/bins stay comfortably real-time and object detection is the one
+  # that eats the budget.
+  detect_hz: 2.0
+  belt_hz: 10.0
+  # Sensor-noise injection is a SIMULATOR cost (np.random.normal over the whole frame) and
+  # makes belt/bin detection 3.5x slower for nothing on real hardware.  It is read at
+  # import time, so it must be set before the process starts -- see oio/env.py.
+  real_noise: false
+  # A detection older than this is stale; the consumer must know, not guess.
+  max_age_s: 1.5

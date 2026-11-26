@@ -1,0 +1,29 @@
+# Mini-PC runtime (Beelink N150 / Intel N150, 12 GB, x86_64, Ubuntu 22.04 or 24.04).
+# Pinned because "code and parameters are locked after inspection" -- an unpinned wheel is
+# a parameter that can change between the escrow submission and the run.
+
+numpy==2.1.3
+pyyaml==6.0.2
+
+# CPU wheel only.  The policies are three-layer MLPs; the whole leg control step measures
+# 153 us on one core, so a GPU build would only cost disk and start-up time.
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch==2.5.1
+torch==2.5.1
+
+# Optional but wanted: perception falls back to a pure-numpy connected-components labeller
+# without it, and scipy.ndimage is roughly an order of magnitude faster.
+scipy==1.14.1
+
+# Camera rectification into the virtual pinhole, and JPEG decode for the SDK camera path.
+# headless: no GUI libs on a robot.
+opencv-python-headless==4.10.0.84
+
+# --- hardware, install on the robot only -------------------------------------------------
+# Legs.  cyclonedds is version-locked by unitree_sdk2py; if the wheel will not build,
+# compile CycloneDDS from source and export CYCLONEDDS_HOME first.
+#   cyclonedds==0.10.2
+#   unitree_sdk2py            (git+https://github.com/unitreerobotics/unitree_sdk2_python)
+#
+# Arm.  CAN at 1 Mbps through SocketCAN; run the SDK's can_activate.sh before starting.
+#   python-can>=4.0
+#   piper_sdk

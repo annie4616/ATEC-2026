@@ -1,0 +1,132 @@
+# A2 Pro leg bridge contract.
+#
+# Every number here was cross-checked in three places before it was written down:
+#   a2pro_rl/a2pkg/a2.py            (actuator gains, default pose, effort/velocity limits)
+#   .../unitree_b2/rough_env_cfg.py (joint order with preserve_order=True, action scales)
+#   course_mission/mission.py       (LegDriver: obs assembly, the ratio conversion)
+# Code reads this file; code does NOT carry these constants.
+
+transport:
+  # Which IDL family the robot speaks.  Go2/B2/H1 use "go"; G1/H1_2 use "hg".  A2 Pro is
+  # UNVERIFIED -- it is a newer platform and neither reference repo covers it.  Confirm on
+  # check-in day with tools/dump_motor_map.py, which prints what actually arrives.
+  msg_type: go
+  domain_id: 0
+  net_interface: null          # e.g. "enp2s0"; null = must be given on the command line
+  lowcmd_topic: rt/lowcmd
+  lowstate_topic: rt/lowstate
+  # Republish the last LowCmd at this rate from a dedicated thread so a slow policy tick
+  # never starves the motor watchdog.  The C++ reference does 500 Hz; the Python one does
+  # not do it at all, which is why its damping can be lost to a single dropped packet.
+  cmd_republish_hz: 500.0
+  # No LowState for this long => the link is dead => damping.  A 50 Hz stream that misses
+  # 5 consecutive frames is already an anomaly.
+  state_timeout_s: 0.10
+
+control:
+  rate_hz: 50.0                # policy tick; sim was decimation 4 x dt 0.005
+  # Motor-side PD.  We do not close the loop on the mini-PC: q/kp/kd go to the driver.
+  # Training randomised gains by U(0.5, 2.0), so the policy tolerates kp 60-240 / kd 2-8.
+  kp: 120.0
+  kd: 4.0
+
+# THE joint order.  This is the policy's index order AND, by construction, the Unitree SDK
+# motor order -- rough_env_cfg.py pins it with preserve_order=True and it is character-for-
+# character the same list as go2_parkour_deploy's UNITREE_SDK_JOINT_NAMES.  That makes
+# leg_joint2motor_idx an identity map *if* A2 Pro follows the Go2 convention.  It is a
+# hypothesis, not a fact: verify with tools/dump_motor_map.py before the first stand.
+joint_names:
+  [FR_hip, FR_thigh, FR_calf,
+   FL_hip, FL_thigh, FL_calf,
+   RR_hip, RR_thigh, RR_calf,
+   RL_hip, RL_thigh, RL_calf]
+
+leg_joint2motor_idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+# Per-joint sign and offset applied as  q_policy = sign * (q_motor - offset).
+# Both are identity until measured; dump_motor_map.py exists to fill them in.
+joint_sign:   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+joint_offset: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+# Action offsets == the standing pose == a2.py init_state, expanded into joint_names order.
+# Hind thighs are 1.0 where the front are 0.8.  Standing base height ~0.43 m.
+default_angles: [-0.1, 0.8, -1.5,
+                  0.1, 0.8, -1.5,
+                 -0.1, 1.0, -1.5,
+                  0.1, 1.0, -1.5]
+
+# q_target[j] = default_angles[j] + action_scale[j] * a[j].
+# The sim's `ratio = scale / ENV_LEG_SCALE` double conversion collapses into this one line
+# on hardware.  Multiplying by 0.5 anywhere here is the classic way to halve the gait.
+action_scale: [0.125, 0.25, 0.25,
+               0.125, 0.25, 0.25,
+               0.125, 0.25, 0.25,
+               0.125, 0.25, 0.25]
+
+# From the URDF.  Front and hind thighs have different ranges -- do not collapse them.
+joint_limits:
+  - [-1.01,  1.01]   # FR_hip
+  - [-2.34,  3.15]   # FR_thigh   (front)
+  - [-2.77, -0.54]   # FR_calf
+  - [-1.01,  1.01]   # FL_hip
+  - [-2.34,  3.15]   # FL_thigh   (front)
+  - [-2.77, -0.54]   # FL_calf
+  - [-1.01,  1.01]   # RR_hip
+  - [-1.56,  3.94]   # RR_thigh   (hind)
+  - [-2.77, -0.54]   # RR_calf
+  - [-1.01,  1.01]   # RL_hip
+  - [-1.56,  3.94]   # RL_thigh   (hind)
+  - [-2.77, -0.54]   # RL_calf
+
+effort_limits:   [120, 120, 180, 120, 120, 180, 120, 120, 180, 120, 120, 180]
+velocity_limits: [22, 22, 14.6667, 22, 22, 14.6667, 22, 22, 14.6667, 22, 22, 14.6667]
+
+limits:
+  # Shrink the URDF range by this margin before clamping, so a target never sits exactly on
+  # a hard stop where the driver may fault instead of saturating.
+  soft_limit_factor: 0.9
+  # Max change of a joint TARGET per control step.  "auto" derives it per joint from
+  # velocity_limits / rate_hz * margin; a number overrides that for all twelve.
+  #
+  # This is a DIVERGENCE GUARD, not a smoother, and the difference decides the number.
+  # Measured over 2399 steps of the real 0824 policy across four command regimes, the
+  # per-step target change is p50 0.0020, p99 0.033, p99.9 0.108, max 0.43 rad.  A flat
+  # 0.2 rad cap -- the value the arm uses -- clipped 0.17 % of ticks, i.e. it was reshaping
+  # the gait at exactly the transients the policy uses to catch itself.  At margin 1.5 the
+  # caps are 0.66 rad (hip/thigh) and 0.44 rad (calf), above every observed demand, so
+  # normal walking is untouched and a NaN or a wild jump is still bounded.
+  #
+  # Over-speed that actually matters is reported from MEASURED velocity by
+  # limits.velocity_watchdog, which is the honest signal; a target-rate clamp cannot tell
+  # you a joint is being dragged.
+  max_target_delta_rad: auto
+  max_target_delta_margin: 1.5
+  # Ramp from the measured pose to the standing pose over this long, at full gains.
+  stand_ramp_s: 2.0
+
+safety:
+  # Projected gravity z above this means the body is past ~90 deg -- abort to damping.
+  # The C++ reference checks obs(5) > 0; we use the same quantity with a margin.
+  grav_z_abort: -0.20
+  max_roll_rad: 1.2
+  max_pitch_rad: 1.2
+  # Sustained low body height with near-zero progress => fallen.
+  fall_height_m: 0.20
+  fall_hold_s: 0.6
+  # Damping is a state, not a packet: hold it at the control rate for at least this long
+  # before anything may re-arm.
+  damp_kd: 8.0
+  damp_min_s: 1.0
+  # Controller buttons that abort the run.  The observer stands outside the course and must
+  # be able to stop the robot without entering it.  Read even during RUN -- this is an
+  # emergency input, not a task command, so it does not make the run non-autonomous.
+  abort_buttons: [select]
+  # Consecutive ticks with the rate limiter active before it is treated as a fault.  1 s of
+  # continuous clamping means the guard has become the controller.
+  rate_streak_limit: 50
+
+command:
+  # Caps on (vx, vy, wz) handed to the policy.  Training sampled +-1.0 on all three.
+  max_vx: 0.9
+  max_vy: 0.4
+  max_wz: 1.0

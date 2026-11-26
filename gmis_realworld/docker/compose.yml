@@ -1,0 +1,53 @@
+# The competition run, as a declaration rather than a command line.
+#
+#   NIC=enp2s0 docker compose -f docker/compose.yml run --rm onboard doctor
+#   NIC=enp2s0 docker compose -f docker/compose.yml run --rm onboard run --backend real --nic "$NIC"
+#
+# docker/run.sh is the PRIMARY entry point and the one the runbook uses: it probes for
+# cameras/CAN adapters that exist, forwards MISSION_*/ONBOARD_* knobs and echoes them, and
+# mounts a venue config directory only when you ask for one.  Compose cannot do any of that
+# conditionally, so this file deliberately does LESS rather than pretending to match.
+#
+# What changed on 2026-09-09, and why:
+#   * the configs bind mount is GONE from the default service.  It used to be
+#     `${CONFIGS:-../onboard/configs}:/app/onboard/configs:ro` -- unconditional, with the
+#     host checkout as the default -- so `compose up` silently ran the host's yaml instead
+#     of the image's, and the digest stopped describing the behaviour.  Under the 0907 rules
+#     (IV.5, code and parameters locked at inspection) that is exactly the wrong default.
+#     For a venue override use docker/run.sh with CONFIGS=, or compose.venue.yml below.
+#   * the logs mount moved to /app/onboard/logs, which is where the stack actually writes.
+#   * shm_size dropped: it is inert under ipc: host.
+#   * command: is no longer "doctor" while the header claims this is the competition run.
+services:
+  onboard:
+    image: ${IMAGE:-atec-onboard}:${TAG:-latest}
+    build:
+      context: ..                 # the ROOT .dockerignore whitelists the 13 MB that matters
+      dockerfile: docker/Dockerfile
+      platforms: [linux/amd64]    # the robot's mini-PC; the image asserts this too
+      args:
+        WITH_SDK: "1"
+    # DDS discovers the robot by multicast on 192.168.123.x, and SocketCAN's can0 is a
+    # network interface too.  On a bridge network the robot is simply absent, and the
+    # symptom is "no LowState" with nothing in the log to explain it.
+    network_mode: host
+    ipc: host
+    cap_add: [SYS_NICE]          # the control thread asks for SCHED_FIFO
+    ulimits:
+      rtprio: 99                 # the capability alone is not enough
+      memlock: -1
+    # SIGTERM has to reach python, which damps the legs on the way out.
+    stop_signal: SIGTERM
+    stop_grace_period: 20s
+    environment:
+      MISSION_REAL_NOISE: "${MISSION_REAL_NOISE:-0}"   # the real sensors bring their own
+      MISSION_VENUE_PHOTO: "${MISSION_VENUE_PHOTO:-}"  # detector prototype branch
+      NIC: "${NIC:-}"
+    volumes:
+      # Where the stack actually writes: run reports, ledger.json, calibration captures.
+      - ../onboard/logs:/app/onboard/logs
+    # Cameras and USB-CAN adapters are host-specific and compose cannot probe for them.
+    # docker/run.sh does; if you need them here, add them in compose.venue.yml.
+    devices: []
+    stdin_open: true
+    tty: true

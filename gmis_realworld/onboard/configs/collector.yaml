@@ -1,0 +1,152 @@
+# Task 2 collection decisions.  Every threshold here was measured in simulation under
+# MISSION_OBJ_HONEST=1 + MISSION_NAV_HONEST=1 -- the branch set that has no simulator truth
+# on the control path.  Nothing in this file is a preference; changing one changes a
+# behaviour that has a number behind it.
+
+track:
+  # Association gate = gate_m + gate_per_m * max(range_of_view, track.best_range).
+  # A flat gate cannot be right at 0.5 m and 3 m at once.  Measured over 171 associations:
+  # detection-to-memory distance median 70 mm, p90 210 mm, max 560 mm, and the stop-and-look
+  # refinement moves the estimate a median 50 mm / p90 221 mm.  0.45 covers both p90s while
+  # staying well under the spacing between two articles of the same class.
+  gate_m: 0.45
+  gate_per_m: 0.30
+  # A track seen in one frame is as likely to be a texture artefact as an article.  This
+  # replaces the simulator's false-positive filter, which was ground-truth comparison and
+  # was killing 30.3 % of good detections along with the artefacts.
+  min_views: 2
+  # Fruitless re-looks before the track is written off as a ghost.  One miss is a bad angle;
+  # two is an empty patch of deck.
+  lost_looks: 2
+  blacklist_radius_m: 0.30
+
+select:
+  # Lexicographic (class_rank + picked_of_class, terrain_rank, distance) -- distance order,
+  # as in simulation.
+  #
+  # NOTE, from the training log of the shipping grasp checkpoint (tailB3): it was fine-tuned
+  # on objects spanning x 45-70, y 45-130, z 30-120 mm.  Only the CAN (66x66x115) is inside
+  # that box; rind (200x50x20) and lunchbox (150x110x60) are not -- and the measured record
+  # is can 5/153, rind 0/83, lunchbox 0/29.  Distance order therefore spends ~42 % of
+  # attempts on classes the policy has never seen.  Raising their class_rank demotes them;
+  # the ledger is what tells you whether to.
+  class_rank: {can: 0, rind: 0, lunchbox: 0, redbag: 1}
+  skip_classes: [redbag]        # 0/50 history, and its grasp needs a simulator pose
+  max_scored_per_class: 2
+  corridor_lat_m: 1.10          # reject detections wider than this off the centreline
+  range_min_m: 0.38             # inside this the robot's own arm fills the frame
+  range_max_m: 2.20             # beyond this the detector's median error is 2.6 m
+
+approach:
+  # The arrival test.  Lateral is the tight one: the bank anchor is a point, and being 7 cm
+  # off across the approach axis is the difference between the jaw straddling the object and
+  # brushing past it.
+  radius_m: 0.15
+  lateral_m: 0.07
+  heading_rad: 0.15
+  timeout_steps: 900
+  # A timed-out approach still counts as arrived inside this residual.
+  timeout_accept_m: 0.25
+  # Fixed feed-forward for the base shift that settling and crouching produce.  Measured.
+  aim_bias: [0.05, -0.15]
+  aim_x: 0.0
+  aim_y: 0.0
+  # Post-crouch alignment: beyond either of these, stand up, back off and approach again.
+  retry_far_m: 0.14
+  retry_lat_m: 0.18
+  retry_max: 1
+  retry_gain: 1.0
+  lat_abort_m: 1.70
+
+crouch:
+  max_roll_rad: 0.28
+  max_pitch_rad: 0.32
+  max_height_err_m: 0.09
+  max_height_std_m: 0.035
+  blend_steps: 30
+  descend_steps: 140
+  stability_steps: 70
+
+grasp:
+  # The pre-grasp bank defines where the object must sit; outside this the approach did not
+  # converge and retrying from the same stance only burns the clock.
+  bank_drift_abort_m: 0.40
+  bank_min_x: 0.50              # bank filter; 745 of 5624 configs survive
+  bank_pick: far                # far | over  (policy mode needs bank orientations we lack)
+  bank_pick_min_sep_m: 0.15     # start from a config not already on the object
+  ramp_steps: 60
+  ramp_fail_rad: 0.12
+  # Episode length and the three early aborts, all evaluated at exact step indices.
+  steps: 500
+  stall_at: 220
+  stall_reach_m: 0.20
+  diverge_at: 40
+  diverge_m: 0.20
+  hover_at: 150
+  hover_m: 0.10
+  # When the hand arrives and the fingers find nothing, step the frozen target rather than
+  # pay a 4,000-step re-approach.  45 mm is the measured median detection-vs-article error.
+  probes: 4
+  probe_d_m: 0.045
+  # RL attempts before falling back to the scripted IK pinch.  For rind and lunchbox the
+  # scripted path is the ONLY one -- see the note in `select`.
+  rl_tries: 2
+  retries: 5
+  action_scale: 0.02
+  # Strip yaw from the base_state quaternion.  Training reset the robot at yaw ~ 0 every
+  # episode, so the policy has never seen a world heading; on the course the robot faces
+  # anywhere, and on hardware there is no world yaw to send at all.  Yaw-free IS the
+  # training distribution.
+  noyaw: true
+  # Caps on the scaled pose command.  The checkpoint commands 83 mm/step and 26 deg/step
+  # against a training contract of 20 mm/step, and these caps have never been measured.
+  # 0 = off, which is the shipping value; they exist so the venue can A/B them.
+  pos_cap_m: 0.0
+  rot_cap_rad: 0.0
+
+deliver:
+  mode: sighted                 # sighted | apron   (sighted falls back to apron on failure)
+  # A bin memory is fresh only if BOTH hold.  Age alone was not enough: one run's 1,093-step
+  # sighting passed the age gate, had already failed the distance gate, and the "fresh"
+  # correction it authorised pushed the drop 0.26 m out.
+  bin_max_age_steps: 2500
+  bin_max_move_m: 6.0
+  bin_near_range_m: 3.5
+  # Stand-off band.  The robot cannot stand closer than ~0.5 m (its front feet reach the
+  # bin's base plate) and the drop pose carries the TCP 0.59 m ahead of the base.
+  stand_off_near_m: 0.50
+  stand_off_far_m: 0.62
+  stop_lat_m: 0.07
+  stop_lat_relaxed_m: 0.16      # after 60 % of the approach budget
+  abort_lat_m: 1.85
+  far_hold_centre_m: 3.0
+  # Re-centring the load over the opening.  Cap at twice the detector's own accuracy
+  # (50-60 mm); beyond that the two beliefs disagree by more than either is worth.
+  recentre_max_m: 0.14
+  recentre_step_cap_m: 0.12
+  recentre_min_m: 0.03
+  # A stale correction is a coin flip, not a weak signal: the same magnitude rescued one
+  # drop and ruined another.  Expected value zero, variance positive -- do not take the bet.
+  recentre_refuse_when_stale: true
+  # Release deep.  Released at rim height objects bounce off the rim and roll out to `area`.
+  lower_m: 0.36
+  open_steps: 60
+  settle_steps: 120
+  withdraw_up_m: 0.32
+  # The believed-delivery test: the jaw opened with the TCP inside the sighted bin's
+  # half-opening.  This is the deployable stand-in for the judge's landing classification.
+  believe_half_along_m: 0.20
+  believe_half_across_m: 0.13
+  # 25 % zone.  Walk there FIRST, then test, then release: a failed bin approach tends to
+  # leave the robot exactly outside it, and anything done out of bounds is void.
+  apron_half_along_m: 0.46
+  apron_half_across_m: 1.29
+
+budget:
+  # A whole object costs this many control steps plus the travel to the bins and back.
+  object_work_steps: 3500
+  travel_steps_per_m: 85.0
+  trip_fixed_steps: 620
+  unload_steps: 1100
+  # Attempts allowed per object before it is written off, by class.
+  attempts: {can: 2, rind: 2, lunchbox: 3, redbag: 1}

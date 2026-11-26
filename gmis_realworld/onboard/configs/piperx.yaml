@@ -1,0 +1,90 @@
+# PiPER-X arm bridge contract.
+#
+# Sources: a2pro_rl/assets/a2_piperx.urdf (joints/limits/mount), course_mission/armkin.py
+# (FK chain + TCP), course_mission/mission.py + deploy/run_mission.sh (rate caps that the
+# 120/160 run actually used), a2pkg/a2piper.py (sim gains).
+
+transport:
+  backend: piper_sdk           # piper_sdk | mock
+  can_interface: can0
+  can_bitrate: 1000000         # PiPER is 1 Mbps, fixed
+  # piper_sdk documents a 200 Hz control ceiling and ~25 ms before feedback reflects a
+  # command.  We stream targets at the control rate and read state asynchronously.
+  command_hz: 50.0
+  state_timeout_s: 0.20
+  # EnableArm(7) = all joints.  Refuse to leave HOLD until every joint reports enabled.
+  enable_all: true
+
+joint_names: [arm_joint1, arm_joint2, arm_joint3, arm_joint4, arm_joint5, arm_joint6]
+
+# URDF limits.  joint2 and joint3 are one-sided -- a symmetric clamp would silently forbid
+# half the reachable workspace on one and allow an unreachable target on the other.
+joint_limits:
+  - [-2.618,   2.618]
+  - [ 0.0,     3.14]
+  - [-2.9671,  0.0]
+  - [-1.57,    1.57]
+  - [-1.57,    1.57]
+  - [-3.14,    3.14]
+
+# Home / stowed pose.  Zeros are the URDF default and the pose the walking policy was
+# perturbed around; joint2 is clamped up off its 0.0 lower stop so the ramp has room.
+home: [0.0, 0.35, -0.35, 0.0, 0.0, 0.0]
+stow: [0.0, 0.35, -0.35, 0.0, 0.0, 0.0]
+
+limits:
+  # URDF rates the arm at 10 rad/s.  The sim actuator said 100, which is 10x the hardware
+  # and is exactly the kind of number that makes a policy look fine until the real driver
+  # faults.  0.2 rad/step at 50 Hz = 10 rad/s, and MISSION_ARM_RATE=0.2 is what the
+  # 120/160 run used, so this is the measured-good value, not a guess.
+  max_target_delta_rad: 0.2
+  velocity_limit: 10.0
+  effort_limit: 100.0
+  soft_limit_factor: 0.98
+
+gripper:
+  # THE FACTOR-OF-TWO TRAP.  In sim the gripper is two mirrored prismatic joints,
+  # arm_joint7 in [0, 0.05] and arm_joint8 in [-0.05, 0], commanded as [w, -w].  So a sim
+  # "width" of w is ONE finger's travel and the real opening is 2*w.  Anything crossing
+  # this boundary goes through width_to_stroke()/stroke_to_width() and nowhere else.
+  sim_half_travel_m: 0.05      # per-finger, from the URDF
+  stroke_per_width: 2.0        # real opening = 2 * sim half-width
+  max_stroke_m: 0.10
+  open_width: 0.05             # sim half-width; GRASP_GRIP_OPEN default
+  # 0.016 m/step at 50 Hz = 0.8 m/s, a 20 % margin under the 1.0 m/s finger rating.
+  max_stroke_delta_m: 0.016
+  vel_guard_mps: 1.0
+  # Closing effort/current above this while width has stopped shrinking = something is held.
+  # Calibrate per object class during the check-in-day gripper characterisation.
+  hold_current_a: 0.6
+
+# Grasp-success bands, fitted on 1,156 recorded attempts (298 held / 858 missed).
+# width >= gw_lo AND effort >= `effort` recovers 298/298 holds with 33 false positives, and
+# every one of those 33 had no lift -- so `lift` is what actually separates, not a polish.
+hold:
+  gw_lo: 0.003            # below this the fingers closed on air
+  gw_hi: 0.0995           # just under the mechanical span; a genuine hold at 99.4 mm exists
+  effort: 0.6             # A, real gripper current (the sim's unit was drive effort)
+  lift: 0.04              # m of TCP rise since the fingers first loaded
+  strong_loaded_n: 15     # loaded steps that, with strong_lift, end the episode early
+  strong_lift: 0.12
+  still_eps: 0.001        # width change below this counts as "stopped"
+  debounce: 3             # consecutive empty reads before the lift reference is forgotten
+
+kinematics:
+  # base_link -> arm_base, fixed.  armkin.ARM_MOUNT_XYZ carries the same value.
+  mount_xyz: [0.16, 0.0, 0.08]
+  # TCP along gripper_base local z.  GRASP_TCP_OFFSET must agree with armkin or
+  # check_armkin.py compares two different tool points and calls them equal.
+  tcp_offset: 0.135
+  # DLS damping.  The controller default 0.01 is effectively an undamped pseudo-inverse and
+  # whips the arm near singularities; 0.05 shipped with the 120/160 run.
+  ik_lambda: 0.05
+  # Reproduce IsaacLab's Jacobian frame quirk for anything driving the TRAINED policy.
+  # "Fixing" it (MISSION_IK_FRAME_FIX=1) scored 0/5 against a 2-3/6 baseline: the policy
+  # learned through the quirk, so the quirk is part of its interface.
+  use_training_jacobian: true
+
+gains:                          # sim reference only; the real arm closes its own loop
+  kp: 80.0
+  kd: 4.0

@@ -1,0 +1,188 @@
+{
+  "stand_height": 0.53,
+  "control_dt": 0.02,
+  "joint_names": [
+    "FL_hip_joint",
+    "FR_hip_joint",
+    "RL_hip_joint",
+    "RR_hip_joint",
+    "FL_thigh_joint",
+    "FR_thigh_joint",
+    "RL_thigh_joint",
+    "RR_thigh_joint",
+    "FL_calf_joint",
+    "FR_calf_joint",
+    "RL_calf_joint",
+    "RR_calf_joint"
+  ],
+  "poses": {
+    "0.27": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.27_2026-08-11_01-39-57/model_2999.pt",
+      "base_height_mean": 0.2695,
+      "base_height_std": 0.0,
+      "projected_gravity_z": -0.9995,
+      "joint_pos": {
+        "FL_hip_joint": -0.57215,
+        "FR_hip_joint": 0.31028,
+        "RL_hip_joint": -0.16865,
+        "RR_hip_joint": 0.19464,
+        "FL_thigh_joint": 1.51347,
+        "FR_thigh_joint": 1.57081,
+        "RL_thigh_joint": 1.53411,
+        "RR_thigh_joint": 0.99915,
+        "FL_calf_joint": -2.38499,
+        "FR_calf_joint": -2.29747,
+        "RL_calf_joint": -2.19273,
+        "RR_calf_joint": -2.28705
+      },
+      "joint_temporal_std": 0.00161
+    },
+    "0.26": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.26_2026-08-11_01-38-28/model_2999.pt",
+      "base_height_mean": 0.2576,
+      "base_height_std": 0.0001,
+      "projected_gravity_z": -0.9999,
+      "joint_pos": {
+        "FL_hip_joint": -0.35754,
+        "FR_hip_joint": 0.42092,
+        "RL_hip_joint": -0.09905,
+        "RR_hip_joint": 0.04156,
+        "FL_thigh_joint": 1.27549,
+        "FR_thigh_joint": 1.67064,
+        "RL_thigh_joint": 1.49697,
+        "RR_thigh_joint": 1.47443,
+        "FL_calf_joint": -2.41446,
+        "FR_calf_joint": -2.33504,
+        "RL_calf_joint": -2.28065,
+        "RR_calf_joint": -2.27559
+      },
+      "joint_temporal_std": 0.0006
+    },
+    "0.25": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.25_2026-08-11_01-36-55/model_2999.pt",
+      "base_height_mean": 0.2505,
+      "base_height_std": 0.0,
+      "projected_gravity_z": -0.9997,
+      "joint_pos": {
+        "FL_hip_joint": -0.52536,
+        "FR_hip_joint": 0.53017,
+        "RL_hip_joint": -0.16112,
+        "RR_hip_joint": -0.25544,
+        "FL_thigh_joint": 1.31479,
+        "FR_thigh_joint": 1.64723,
+        "RL_thigh_joint": 1.56697,
+        "RR_thigh_joint": 1.12381,
+        "FL_calf_joint": -2.49487,
+        "FR_calf_joint": -2.43752,
+        "RL_calf_joint": -2.27219,
+        "RR_calf_joint": -2.15135
+      },
+      "joint_temporal_std": 0.00014
+    },
+    "0.24": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.24_2026-08-11_01-35-23/model_2999.pt",
+      "base_height_mean": 0.2385,
+      "base_height_std": 0.0001,
+      "projected_gravity_z": -0.9985,
+      "joint_pos": {
+        "FL_hip_joint": -0.46596,
+        "FR_hip_joint": 0.58569,
+        "RL_hip_joint": -0.29896,
+        "RR_hip_joint": 0.15051,
+        "FL_thigh_joint": 1.29399,
+        "FR_thigh_joint": 1.81049,
+        "RL_thigh_joint": 1.44163,
+        "RR_thigh_joint": 1.2441,
+        "FL_calf_joint": -2.58432,
+        "FR_calf_joint": -2.4128,
+        "RL_calf_joint": -2.44787,
+        "RR_calf_joint": -2.36961
+      },
+      "joint_temporal_std": 0.00059
+    },
+    "0.23": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.23_2026-08-11_01-33-48/model_2999.pt",
+      "base_height_mean": 0.2286,
+      "base_height_std": 0.0001,
+      "projected_gravity_z": -0.9997,
+      "joint_pos": {
+        "FL_hip_joint": -0.25161,
+        "FR_hip_joint": 0.38021,
+        "RL_hip_joint": -0.36361,
+        "RR_hip_joint": -0.01885,
+        "FL_thigh_joint": 1.30094,
+        "FR_thigh_joint": 1.79712,
+        "RL_thigh_joint": 1.73363,
+        "RR_thigh_joint": 1.42532,
+        "FL_calf_joint": -2.53493,
+        "FR_calf_joint": -2.41345,
+        "RL_calf_joint": -2.45724,
+        "RR_calf_joint": -2.34449
+      },
+      "joint_temporal_std": 0.00039
+    },
+    "0.22": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.22_2026-08-11_01-32-16/model_2999.pt",
+      "base_height_mean": 0.2178,
+      "base_height_std": 0.0001,
+      "projected_gravity_z": -0.9995,
+      "joint_pos": {
+        "FL_hip_joint": -0.30843,
+        "FR_hip_joint": 0.50878,
+        "RL_hip_joint": 0.35376,
+        "RR_hip_joint": -0.21541,
+        "FL_thigh_joint": 1.45522,
+        "FR_thigh_joint": 1.92654,
+        "RL_thigh_joint": 1.39154,
+        "RR_thigh_joint": 1.78005,
+        "FL_calf_joint": -2.5469,
+        "FR_calf_joint": -2.4109,
+        "RL_calf_joint": -2.23639,
+        "RR_calf_joint": -2.02999
+      },
+      "joint_temporal_std": 0.00017
+    },
+    "0.21": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.21_2026-08-11_01-30-44/model_2999.pt",
+      "base_height_mean": 0.2056,
+      "base_height_std": 0.0,
+      "projected_gravity_z": -0.999,
+      "joint_pos": {
+        "FL_hip_joint": -0.72429,
+        "FR_hip_joint": 0.71016,
+        "RL_hip_joint": 0.05368,
+        "RR_hip_joint": 0.05781,
+        "FL_thigh_joint": 1.90949,
+        "FR_thigh_joint": 1.86032,
+        "RL_thigh_joint": 1.26513,
+        "RR_thigh_joint": 1.53945,
+        "FL_calf_joint": -2.58756,
+        "FR_calf_joint": -2.56925,
+        "RL_calf_joint": -2.52756,
+        "RR_calf_joint": -2.51594
+      },
+      "joint_temporal_std": 0.00021
+    },
+    "0.2": {
+      "checkpoint": "/hdd0/yewon/ATEC2026_Simulation_Challenge/real_world_preliminary/ATEC2026_Simulation_Challenge/eunha_rl/s075/crouch_runs/crouch0.2_2026-08-11_01-28-59/model_2999.pt",
+      "base_height_mean": 0.2008,
+      "base_height_std": 0.0,
+      "projected_gravity_z": -0.999,
+      "joint_pos": {
+        "FL_hip_joint": -0.56419,
+        "FR_hip_joint": 0.55099,
+        "RL_hip_joint": -0.87063,
+        "RR_hip_joint": -0.5985,
+        "FL_thigh_joint": 1.80183,
+        "FR_thigh_joint": 2.04182,
+        "RL_thigh_joint": 2.29779,
+        "RR_thigh_joint": 1.53121,
+        "FL_calf_joint": -2.63446,
+        "FR_calf_joint": -2.43928,
+        "RL_calf_joint": -2.51129,
+        "RR_calf_joint": -2.3419
+      },
+      "joint_temporal_std": 0.00041
+    }
+  }
+}

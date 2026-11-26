@@ -1,0 +1,70 @@
+# Hong Kong course profile.  Mirrors the deploy profile that produced the honest 120/160
+# run (deploy/logs/0908_0035_fv19/config.json), minus everything that only means something
+# inside a simulator.
+
+course:
+  site: hk
+  # Task 1: grass/mud 2x20, pebble 20, stairs 2x10 = 80 points.
+  checkpoints: [grass_mud_1, grass_mud_2, pebble, stair_1, stair_2]
+  task1_max: 80
+  # Judged on the FEET's ground contact, not the body centre.  Stance half-width 0.203 m,
+  # so the body-frame guard fires at 1.645 m against a 1.9775 m boundary.
+  boundary_half_width: 1.9775
+  foot_guard_half_width: 1.645
+  stance_half_width: 0.203
+
+budget:
+  # 30 minutes, wall clock, from the whistle.  The timer never stops -- not for a fall, not
+  # for a reset, not for our own network.  Everything downstream reads monotonic time.
+  total_s: 1800.0
+  # Stop starting new object attempts with this much left and head for the bins; an item in
+  # the gripper at the finish line is worth zero.
+  reserve_for_delivery_s: 240.0
+  # Crossing the finish line ends collection permanently, so it is the last thing we do.
+  finish_requires_delivery: true
+
+locomotion:
+  nominal_vx: 0.7
+  stair_vx: 0.35
+  approach_vx: 0.25
+  # navfuse.BeltOdomFuser.steer gains.  Fusion + innovation gating measured 98 mm median /
+  # 342 mm worst lateral error against a plain EMA's 194 mm / 846 mm.
+  lat_gain: 0.5
+  head_gain: 1.2
+  lat_cap: 0.30
+  yaw_cap: 0.7
+
+manipulation:
+  # Every one of these was ON for the 120/160 run and cost nothing measurable; they are
+  # what the real driver enforces anyway.
+  arm_rate_rad: 0.2
+  grip_rate_m: 0.016
+  grip_vel_guard: 1.0
+  arm_delay_steps: 1
+  # Grasp target comes from detection, not from any privileged source.
+  detection_seeded: true
+  # ONE.  The shipping profile carries in the gripper, not in the back basket
+  # (`Profile.carry_in_gripper = MISSION_USE_BASKET != "1"`, and the venue solution leaves
+  # MISSION_USE_BASKET unset), so `max_carry` is 1 and every successful grasp triggers a
+  # trip to the bins.  The 3 that stood here was the BASKET number, and with it the trip
+  # accounting is wrong in both directions: the robot would keep hunting with a full hand,
+  # and the delivery reserve would be computed for a load it can never assemble.
+  max_carry: 1
+  # Objects the gripper carries directly.  With max_carry 1 this is every scoring class.
+  hand_classes: [can, rind, lunchbox]
+  # Bin unreachable -> walk to the general placement area and release there: 5 points
+  # instead of 0.  The zone is only +-0.46 x +-1.29 m around the bin row, and a failed bin
+  # approach leaves the robot exactly outside it, so this must WALK first, then check, then
+  # release.
+  apron_fallback: true
+  apron_half_x: 0.46
+  apron_half_y: 1.29
+  # 60+ attempts, zero successes, and it has destroyed runs.  Skipped by default; the
+  # remaining three categories are worth 120 of the 160 points.
+  skip_redbag: true
+
+scoring:
+  correct_bin: 20
+  wrong_bin: 10
+  placement_area: 5
+  max_per_category: 2

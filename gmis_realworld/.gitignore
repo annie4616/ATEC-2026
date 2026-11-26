@@ -1,0 +1,25 @@
+# ============================================================
+# ATEC_gmis — real_world_preliminary/git 의 선별 스냅샷
+# 원칙: 손으로 쓴 소스 + 에셋(.usd) + 정책 체크포인트(.pt)는 커밋,
+#       재생성 가능한 대용량 산출물만 제외.
+# ============================================================
+
+# 검증 영상 — 원본 3.8GB, 개별 최대 441MB (GitHub 100MB 하드 제한 초과)
+*.mp4
+*.avi
+*.mkv
+
+# 파이썬 바이트코드
+*.pyc
+__pycache__/
+
+# grasp 실험 산출물 (exp_runs/*.sh 스크립트는 커밋, 로그·체크포인트는 제외)
+exp_runs/logs/
+exp_runs/runs/
+exp_runs/videos/
+
+# 의도적으로 커밋하는 것들 (참고):
+#   deploy/logs/**/report_venue.json  — 실행별 채점 결과
+#   deploy/logs/*_launch.log          — 검증 실행 로그
+#   **/assets/**/*.usd                — 로봇/지형 에셋
+#   from_eunha/**/*.pt                — 물려받은 보행 정책 가중치

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "entries": {
+    "walk": {
+      "kind": "file",
+      "sha256": "12d0d0ec7c8ae46c2fdb6ea651b44a74c2ea0c2fc0bd49550593a2e8acaec342",
+      "bytes": 6132439,
+      "source": "from_eunha/0824/model_22998.pt"
+    },
+    "adaptation": {
+      "kind": "file",
+      "sha256": "047a7502f1b307a686119fb0c6b010aa1b47179688381ca4748ff2f94318fa42",
+      "bytes": 87733,
+      "source": "from_eunha/0824/adaptation.pt"
+    },
+    "crouch": {
+      "kind": "file",
+      "sha256": "db7e74d90f75c520ec53798c0c168ba357cc4304ae1aaa3535c38dace2ec3891",
+      "bytes": 4664245,
+      "source": "eunha_rl/s075/crouch_runs/crouch0.24_2026-08-11_01-35-23/model_2999.pt"
+    },
+    "grasp": {
+      "kind": "file",
+      "sha256": "ec4b467effaf436068ccb8fc6fe3d4a9d532369735283fa54f9828b0dda1f00b",
+      "bytes": 1278901,
+      "source": "exp_runs/runs/tailB3_2026-09-07_09-59-57/model_1999.pt"
+    },
+    "bank": {
+      "kind": "file",
+      "sha256": "32e582c0e9c07ee897b99126944300b23052d948aa494a8d83449a8a3203a2c5",
+      "bytes": 227392,
+      "source": "eunha_rl/s075/banks/pregrasp_bank_0.24.npz"
+    },
+    "banks_ik": {
+      "kind": "dir",
+      "sha256": "73eb533b1e0d63fd42c861439fc45a3fb211ed5fb99117ade6862467cc7d7324",
+      "files": 2,
+      "bytes": 38148,
+      "source": "eunha_rl/s0821/banks_ik"
+    }
+  }
+}

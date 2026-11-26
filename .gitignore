@@ -1,0 +1,54 @@
+# ATEC 2026 — GitHub 공개본
+# 원칙: 손으로 쓴 소스 + 설정 + 문서만. 대용량 산출물은 전부 제외.
+# (GitHub 파일당 100MB 하드 제한)
+
+# ---- 대용량 산출물 ----
+*.mp4
+*.avi
+*.mkv
+*.gif
+*.hdf5
+*.h5
+*.npz
+*.npy
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.tar.gz
+*.zip
+
+# ---- 3D 에셋 (용량 큼) ----
+*.usd
+*.usda
+*.usdc
+*.dae
+*.stl
+*.obj
+
+# ---- 로그·실행 산출물 ----
+logs/
+runs/
+outputs/
+videos/
+exp_runs/logs/
+exp_runs/runs/
+*.log
+
+# ---- 파이썬 ----
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- 환경 ----
+.env
+.venv/
+venv/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db

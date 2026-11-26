@@ -1,0 +1,41 @@
+# Which weights to load, and what interface each one presents.
+# Paths are relative to onboard/; the bundle is built by tools/bundle_artifacts.py and
+# checked against artifacts/manifest.json at startup, so a swapped file is an error rather
+# than a mystery.
+
+walk:
+  actor: artifacts/walk_actor.pt
+  adaptation: artifacts/adaptation.pt
+  # NOT recoverable from the state dict, and load-bearing: with elu the tracking collapses
+  # on turns and re-acceleration (measured 0/160).  eunha_rl/*/adapt_act.txt records this
+  # per lineage; for the 0824 pair it is relu.
+  adaptation_activation: relu
+  history_len: 50
+  feat_dim: 45
+  latent_dim: 8
+  obs_dim: 53                  # 45 proprio + 8 latent, latent appended LAST
+  hidden: [512, 256, 128]
+  activation: elu
+  action_dim: 12
+
+crouch:
+  actor: artifacts/crouch_actor.pt
+  # Same 53-obs interface as walk; shares the adaptation net.  Switching policies mid-run
+  # refills the history and cross-fades the output so joint targets do not step.
+  shares_adaptation: true
+  blend_steps: 60
+
+grasp:
+  actor: artifacts/grasp_actor.pt
+  obs_dim: 42
+  action_dim: 7
+  bank: artifacts/pregrasp_bank_0.24.npz
+  banks_ik: artifacts/banks_ik
+
+runtime:
+  device: cpu
+  # One thread per policy process.  The whole leg control step measured 82 us on a desktop
+  # core; even at a 10x N150 penalty that is 4 % of the 20 ms budget, so more threads only
+  # buy contention with the perception process.
+  torch_threads: 1
+  verify_manifest: true

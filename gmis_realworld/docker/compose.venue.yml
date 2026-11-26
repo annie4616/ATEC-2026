@@ -1,0 +1,24 @@
+# Venue overlay.  Everything here is a MEASURED or HOST-SPECIFIC fact, which is why it is a
+# separate file rather than a default in compose.yml: the base file has to describe the
+# image as escrowed, and this one records what was added on the day.
+#
+#   CONFIGS=$PWD/venue-configs NIC=enp2s0 \
+#     docker compose -f docker/compose.yml -f docker/compose.venue.yml run --rm onboard \
+#     run --backend real --nic "$NIC"
+#
+# `docker/run.sh identity` prints a sha256 over the EFFECTIVE configs, so a run made with
+# this overlay is still traceable to exact bytes -- which is what rule IV.5 (code and
+# parameters locked after inspection) needs you to be able to show.  Re-bake the measured
+# configs into the image and rebuild once at the end of the day; the digest of THAT build is
+# what gets cited.
+services:
+  onboard:
+    volumes:
+      # Measured at the venue: motor map, camera intrinsics, mount pose.
+      - ${CONFIGS:?set CONFIGS to your venue-configs directory}:/app/onboard/configs:ro
+    devices:
+      # Uncomment the ones that actually exist on this mini-PC -- compose cannot probe, and
+      # naming a device that is absent is a hard error.  `docker/run.sh` probes instead.
+      # - /dev/video0:/dev/video0
+      # - /dev/bus/usb:/dev/bus/usb
+      []

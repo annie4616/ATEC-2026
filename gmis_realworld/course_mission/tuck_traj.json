@@ -1,0 +1,43 @@
+{
+  "depth": "0.24",
+  "arm_joints": [
+    "arm_joint1",
+    "arm_joint2",
+    "arm_joint3",
+    "arm_joint4",
+    "arm_joint5",
+    "arm_joint6"
+  ],
+  "q_carry": [
+    -1.9553616046905518,
+    0.4845658540725708,
+    -0.3566250801086426,
+    1.2381300926208496,
+    1.0993897914886475,
+    -2.222464084625244
+  ],
+  "mode": "tuck",
+  "tcp_carry_b": [
+    -0.012321703135967255,
+    -0.022060802206397057,
+    0.23216992616653442
+  ],
+  "axis_carry_b": [
+    -0.8758279085159302,
+    0.2107766568660736,
+    -0.43416380882263184
+  ],
+  "tcp_mid_b_for_reference": [
+    0.010388590395450592,
+    -0.08535032719373703,
+    0.5476726293563843
+  ],
+  "checks": {
+    "keepout_in": 0,
+    "body_in": 8,
+    "keepout_out": 0,
+    "body_out": 9,
+    "valid": false
+  },
+  "notes": "low tucked carry, solved WITHOUT the basket; replaces retrieve q_mid (TCP z 0.548) as the pose held while walking to the bin"
+}
