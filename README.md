@@ -3,16 +3,29 @@
 > **이 저장소에 대하여**
 > ATEC 2026 Simulation Challenge 및 실기예선 작업의 **소스 코드 공개본**.
 > 대용량 산출물(영상·체크포인트·데이터셋·3D 에셋)은 GitHub 100MB 제한으로 제외했다.
-> 아래 문서는 작업 서버의 원본 디렉터리 구조를 기준으로 쓰였다. 대응은 다음과 같다:
 >
-> | 이 저장소 | 서버 원본 |
+> ```
+> sim_challenge/      시뮬레이션 챌린지 (예선, 93팀 중 10위)
+> realworld/          실기예선 통합 스택 (시뮬 + 온보드 미니PC)
+> parkour_training/   Go2 parkour teacher/student 학습
+> robot_assets/       A2 Pro + Piper X 로봇 모델
+> ```
+>
+> 각 디렉터리에 자체 README가 있다. 아래 문서는 **작업 서버의 원본 구조**를 기준으로
+> 쓰였으므로, 저장소 경로와는 다음과 같이 대응한다:
+>
+> | 이 저장소 | 서버 (`/hdd0/sohyun/ATEC2026/`) |
 > |---|---|
-> | `simulation_challenge/` | `atec_2026_tesk_e/ATEC2026_Simulation_Challenge/` |
-> | `gmis_realworld/` | `ATEC_gmis/` |
-> | `parkour/`, `parkour_lidar/` | `atec_2026_tesk_e/Isaaclab_Parkour{,_lidar}/` |
-> | `task_e/` | `atec_2026_tesk_e/task_e/` |
-> | `robot_a2pro_piperx/` | `atec_2026_tesk_e/new_robot_a2pro_piperx/` |
-> | `taskd_final_controller/` | `atec2026_taskd_eunyeong/final_taskd_artifacts/` |
+> | `sim_challenge/atec_rl_lab_workspace/` | `1_main_workspace/ATEC2026_Simulation_Challenge/` |
+> | `sim_challenge/task_e/` | `1_main_workspace/task_e/` |
+> | `sim_challenge/taskd_final_controller/` | `4_taskd_sweeps/final_taskd_artifacts/` |
+> | `realworld/gmis_stack/` | `2_realworld_stack/` |
+> | `parkour_training/parkour_depth/` | `1_main_workspace/Isaaclab_Parkour/` |
+> | `parkour_training/parkour_lidar/` | `1_main_workspace/Isaaclab_Parkour_lidar/` |
+> | `robot_assets/a2pro_piperx/` | `1_main_workspace/new_robot_a2pro_piperx/` |
+>
+> 서버에만 있는 것: Task A 영상 아카이브(`3_taska_videos/`), 학습 로그·체크포인트,
+> 데이터셋(hdf5), USD 에셋.
 
 > 작성 2026-11-26. 4개 폴더에 흩어진 ATEC 2026 작업을 하나로 정리한 문서.
 > 대회 종료 후 재현·회고용. 각 폴더 안의 개별 README는 그대로 두고, 이 문서가 진입점.
