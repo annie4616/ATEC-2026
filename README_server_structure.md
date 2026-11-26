@@ -18,11 +18,27 @@ ATEC 2026 Simulation Challenge — IsaacLab 기반 사족보행 로봇 대회.
 ├── 3_taska_videos/    680M   Task A 영상 아카이브 (mp4 178개)
 ├── 4_taskd_sweeps/    580M   Task D cross 파라미터 스윕 결과
 ├── 5_github_export/    33M   GitHub 공개본 (코드만)
-└── _cleanup_records/         디스크 정리 기록
+└── _cleanup_records/         정리 기록 (→ 자체 README 있음)
 ```
 
 > 2026-11-26 정리: 폴더명을 바꾸고 `/hdd0/sohyun/`에 **심볼릭 링크를 남겼다.**
 > 기존 스크립트의 절대경로(`/hdd0/sohyun/atec_2026_tesk_e/...`)가 그대로 동작한다.
+
+### 태스크별 위치 색인
+
+폴더는 **태스크가 아니라 작업 공간 기준**으로 나뉘어 있다. 태스크로 찾으려면 아래를 본다.
+
+| 태스크 | 코드 | 데이터·결과 |
+|---|---|---|
+| **Task A**<br>Off-road Navigation | `1_main_workspace/ATEC2026_Simulation_Challenge/scripts/`<br>　`steering_head_wz/` 조향 헤드 train/eval<br>　`steering_ytrack/` y-추종·배포<br>　`act/collect_demos_task_a.py` | `1_main_workspace/taska_exp/` 552M 실험<br>`1_main_workspace/taska_pdheads/` 861M PD 버전별<br>`1_main_workspace/task_a_real_exp/` 107M A2 실물대비<br>`3_taska_videos/` 680M 영상 178개 |
+| **Task D**<br>Obstacle Traversal | `1_main_workspace/ATEC2026_Simulation_Challenge/scripts/`<br>　`task_d/` 진단 diag_* 21개<br>　`act/` 수집·학습·평가·실험 | `4_taskd_sweeps/` 580M 파라미터 스윕<br>　`final_taskd_artifacts/` ★최종 락본<br>`1_main_workspace/.../datasets/atec_task_d_*` |
+| **Task E**<br>Tabletop Manipulation | **`1_main_workspace/task_e/`** ★독립 디렉터리<br>　`collector.py`, `state_machine.py`<br>　`solution_taskE.py`, config 5종<br>`.../scripts/act/{collect_demos,train,filter*}_task_e.py` | `1_main_workspace/task_e/` 26G<br>　`trajectory{,_filtered,_strict}.hdf5` 25G<br>　`checkpoints/` 255M |
+| **실기예선**<br>(Task 1·2) | `2_realworld_stack/` 410M<br>　`onboard/` 미니PC 배포 스택<br>　`course_mission/` 미션 FSM | 성적 Task1 80/80, Task2 120/160 |
+| **parkour**<br>(Task A·D 공용) | `1_main_workspace/Isaaclab_Parkour{,_lidar}/` | `.../logs/rsl_rl/unitree_go2_parkour/` run 68개 |
+
+> **Task E 참고:** hdf5 3개(25G)는 같은 데이터의 3단계 필터링 버전이다.
+> `collector.py`·`filter_demos*.py`가 남아 있으므로 `trajectory.hdf5`에서
+> `_filtered`·`_strict`(15.9G)는 재생성 가능하다.
 
 **대회 태스크** (공식 readme 기준): Off-road Navigation(A), Tabletop Manipulation(E),
 Garbage Collection(B), Obstacle Traversal(D).
@@ -30,14 +46,29 @@ Garbage Collection(B), Obstacle Traversal(D).
 
 ---
 
-## 1. 실행 환경 (필수)
+## 1. 실행 환경
 
-conda env 2개를 **분리 유지**한다. 섞으면 API drift로 깨진다.
+> ⚠️ **2026-11-26: 아래 conda env 3개를 전부 삭제했다** (112GB 회수).
+> 대회가 끝나 재실행 계획이 없어서다. 다시 돌리려면 재구축이 필요하다.
+>
+> | env | 크기 | 용도 |
+> |---|---|---|
+> | `env_isaaclab` | 67G | ATEC2026 본체 (Task A/D/E) |
+> | `parkour_il` | 38G | parkour teacher/student 학습 |
+> | `parkour` | 7G | (구버전) |
+>
+> 재구축 단서: `1_main_workspace/IsaacLab/environment.yml`,
+> 각 `submission_*/requirements.txt`, `2_realworld_stack/docker/Dockerfile`.
+> 러너 `.sh`에 박힌 인터프리터 절대경로도 그에 맞춰 고쳐야 한다.
+
+아래는 삭제 전 구성 기록이다. conda env 2개를 **분리 유지**했다. 섞으면 API drift로 깨진다.
 
 | env | 용도 | 비고 |
 |---|---|---|
 | `env_isaaclab` | ATEC2026 본체 (Task A/D/E) | IsaacLab 3.1.2 |
 | `parkour_il` | parkour teacher/student 학습 | rsl-rl-lib 2.3.3. **여기서만 학습** |
+
+*(위 두 env는 삭제됨. 아래 실행법도 재구축 후에만 유효하다.)*
 
 스크립트는 `conda activate` 대신 절대경로로 호출한다:
 `/home/sohyun/.conda/envs/env_isaaclab/bin/python`
@@ -401,4 +432,16 @@ scripts/rsl_rl/modules/feature_extractors/__init__.py
 
 ## 8. 디스크 정리 기록
 
-*(실행 시 기록)*
+2026-11-26 실행: **191GB → 74GB, 117GB 회수.**
+
+| 분류 | 크기 |
+|---|---|
+| npz 캐시·rollout 로그 | 67.5GB |
+| 중간 체크포인트 | 37.8GB |
+| 중복 hdf5 | 9.4GB |
+| 학습 중 녹화 영상 | 1.9GB |
+
+`best_loss.pt`·`final.pt`·`.onnx` 38개·제출 번들 4개는 전부 보존.
+
+상세 내역·스크립트·로그·판단 근거는 **[`_cleanup_records/README.md`](_cleanup_records/README.md)** 참조.
+`tmp/`에 흩어져 있던 잔해 357개(1.8GB)도 `_cleanup_records/tmp_leftovers/`로 모아 두었다.
